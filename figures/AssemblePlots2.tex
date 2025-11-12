@@ -1,0 +1,23 @@
+\documentclass{standalone}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{graphicx}
+
+\begin{document}
+\begin{tikzpicture}[node distance=1.8cm, >=stealth, every node/.style={inner sep=0}]
+
+% Define nodes with images
+\node (A) {\includegraphics[width=10cm]{NormalJacobi_phase0.pdf}};
+\node[right=of A, xshift = - 3cm] (B) {\includegraphics[width=10cm]{NormalJacobi_phase2.pdf}};
+\node[right=of B, xshift=-3cm] (C) {\includegraphics[width=10cm]{NormalJacobi_phase4.pdf}};
+\node[below=of B, xshift=4.5cm] (D) {\includegraphics[width=10cm]{NormalJacobi_phase3.pdf}};
+\node[below=of A, xshift=3.5cm] (E) {\includegraphics[width=10cm]{NormalJacobi_phase1.pdf}};
+
+% Draw arrows to represent phases
+\draw[->,thick] (A) -- (E);
+\draw[->,thick] (E) -- (B);
+\draw[->,thick] (B) -- (D);
+\draw[->,thick] (D) -- (C);
+
+\end{tikzpicture}
+\end{document}
