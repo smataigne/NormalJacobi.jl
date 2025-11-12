@@ -1,5 +1,15 @@
 using LinearAlgebra
 
+"""
+See
+
+H. H. Goldstine and L. P. Horwitz. A procedure for the diagonalization of normal matrices. J. ACM, 6(2):176-195, 1959. https://doi.org/10.1145/320964.320975.
+
+and
+
+P. J. Eberlein. Solution to the complex eigenproblem by a norm reducing Jacobi type method. Numerische Mathematik, 14(3):232-245, 1970. https://doi.org/10.1007/BF02163332.
+"""
+
 
 """
     offdiag(A::AbstractMatrix)
@@ -16,7 +26,8 @@ function offdiag(A::AbstractMatrix{<:Complex})
     end 
     return Σ
 end
-@views function normaljacobieberlein!(A::AbstractMatrix{<:Complex})
+
+@views function normal_jacobi_goldstine!(A::AbstractMatrix{<:Complex})
     n = size(A, 1)
     T = eltype(A)
     ε = 100 *eps(real(T)) * norm(A)
@@ -57,7 +68,7 @@ end
     return Diagonal(A)
 end
 
-normaljacobieberlein(A::AbstractMatrix{<:Complex}) = normaljacobieberlein!(copy(A))
+normal_jacobi_goldstine(A::AbstractMatrix{<:Complex}) = normal_jacobi_goldstine!(copy(A))
 
 #n = 20
 #A = Matrix(qr(randn(Float64, n , n)).Q)

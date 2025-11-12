@@ -1,74 +1,6 @@
 using LinearAlgebra, SkewLinearAlgebra, LaTeXStrings
+include("Utils.jl")
 include("NormalJacobi2.jl")
-
-"""
-    givens(a, b)
-    
-Compute the cosine and sine of the Givens rotation such that [c s; -s c] [a ;b] = [nm; 0.0].
-"""
-function givens(a, b)
-    nm = hypot(a, b)
-    return a/nm, b/nm  #c, s
-end
-
-"""
-    paardekooper(a::Number, b::Number, e::Number, d::Number)
-Paardekooper's method to compute the cosines and sines of the two Givens rotations such that\\
-```
-[c₁ s₁;     [a b;     [c₂ s₂;\
--s₁ c₁]'  * e d] *  -s₂ c₂] .
-```
-is diagonal.
-"""
-function paardekooper(a::Number, b::Number, e::Number, d::Number)
-    #More stable implementation 
-    #=
-    ε = eps(typeof(a))
-    ν₁ = a^2 + b^2 - d^2 - e^2
-    if abs(ν₁) > ε
-        κ =  2 * (a * e + b * d) / ν₁
-        t₁ = κ /(1 + hypot(1, κ))               #tan(2α₁) = κ 
-        c₁ = 1 / hypot(1, t₁)                   #cos(α₁) = 1/√(1+tan²(α₁))
-        s₁ = c₁ * t₁                            #sin(α₁) = cos(α₁)*tan(α₁)
-    else
-        κ = a * e + b * d
-        c₁ = 1 / √2 
-        s₁ = sign(κ) * sign(ν₁)  *  c₁
-    end
-    ν₂ = c₁ * d - s₁ * b
-    if abs(ν₂) > ε
-        t₂ = (s₁ * a - c₁ * e) / ν₂
-        c₂ = 1 / hypot(1, t₂)                   #cos(α₂) = 1/√(1+tan²(α₂))
-        s₂ = c₂ * t₂                            #sin(α₂) = cos(α₂)*tan(α₂)
-        return c₁, s₁, c₂, s₂
-    else
-        return c₁, s₁, 0, 1
-    end
-    =#
-    #Unstable implementation
-    α₁ = 0.5 * atan(2 * (a * e + b * d) / ( a^2 + b^2 - d^2 - e^2))
-    c₁ = cos(α₁); s₁ = sin(α₁);
-    α₂ = atan((s₁ * a - c₁ * e) / (c₁ * d - s₁ * b))
-    c₂ = cos(α₂); s₂ = sin(α₂);
-    return c₁, s₁, c₂, s₂
-end
-
-"""
-    jacobi_sym(x11::Number, x12::Number, x22::Number)
-
-Jacobi rotation for a symmetric 2x2 matrix [x11 x12; x12 x22].
-"""
-function jacobi_sym(x11::Number, x12::Number, x22::Number)
-    T = typeof(x11)
-    if iszero(x12)
-        return T(1), T(0)
-    end
-    τ = (x11 - x22)/(2 * x12)
-    t = sign(τ) /(abs(τ) + √(1 + τ * τ))
-    c = 1 / √(1 + t * t)
-    s = c * t
-    return c, s
-end
 
 """
     offSchur(A::AbstractMatrix)
@@ -77,7 +9,7 @@ Compute the off-Schur Frobenius norm of a matrix A.
 function offSchur(A::AbstractMatrix)
     Σ = 0
     n = size(A, 1)
-    for i ∈ 1:2:n-3
+    for i ∈ 1:2:n-2
         for j ∈ i+2:n
             Σ += A[j, i]^2 + A[j, i + 1]^2 
         end

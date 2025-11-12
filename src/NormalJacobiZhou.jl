@@ -1,7 +1,7 @@
 
 using LinearAlgebra
 """
-```normaljacobischur!(A::AbstractMatrix)```
+```normal_jacobi_zhou!(A::AbstractMatrix)```
 
 In-place Jacobi method for a normal matrix:
     Zhou, B., Brent, R.: An efficient method for computing eigenvalues of a real
@@ -11,7 +11,7 @@ In-place Jacobi method for a normal matrix:
 Input:  - a normal matrix `A`.\\
 Output: The real Schur form of a in a `Tridiagonal` matrix.
 """
-@views function normaljacobi!(A::AbstractMatrix)
+@views function normal_jacobi_zhou!(A::AbstractMatrix)
     n = size(A, 1)
     T = typeof(A[1, 1])
     ε = 100 *eps(T) * norm(A)
@@ -41,4 +41,4 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     return Tridiagonal(A)
 end
 
-normaljacobi(A::AbstractMatrix)= normaljacobi!(copy(A))
+normal_jacobi_zhou(A::AbstractMatrix)= normal_jacobi_zhou!(copy(A))
