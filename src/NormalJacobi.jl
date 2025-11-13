@@ -106,8 +106,8 @@ end
         P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
 legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
     heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
-        title!(L"Phase 0: Initial Matrix $A$")
-        savefig(P, "NormalJacobi_phase0.pdf")
+        title!(L"Initial Matrix $A$")
+        savefig(P, "./figures/NormalJacobi_phase0.pdf")
     end
     #Phase 1
     while offschur > ε && iter < itermax
@@ -181,8 +181,8 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
         P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
 legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
     heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
-        title!(L"Phase 1: $A$ after Paardekooper's Method")
-        savefig(P, "NormalJacobi_phase1.pdf")
+        title!("After Phase I")
+        savefig(P, "./figures/NormalJacobi_phase1.pdf")
     end
     if offSchur(Ω) > ε
         @warn "Maximum number of iterations reached in Phase 1 with offSchur = $(offSchur(Ω))"
@@ -227,8 +227,8 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
         P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
 legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
     heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
-        title!("Phase 2: After Symmetric Jacobi")  
-    savefig(P, "NormalJacobi_phase2.pdf")
+        title!("After Phase II")  
+    savefig(P, "./figures/NormalJacobi_phase2.pdf")
     end
     if offdiag(M) > ε
         @warn "Maximum number of iterations reached in Phase 2 with offdiag = $(offdiag(M))"
@@ -281,8 +281,8 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
         P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
 legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
     heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
-        title!("Phase 3: After Skew-Hamiltonian Jacobi")    
-    savefig(P, "NormalJacobi_phase3.pdf")
+        title!("After Phase III")    
+    savefig(P, "./figures/NormalJacobi_phase3.pdf")
     end
     
     #Phase 4: Accuracy loss correction
@@ -316,8 +316,8 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
        P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
 legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
 heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
-        title!("Phase 4: After Accuracy Improvement")
-        savefig(P, "NormalJacobi_phase4.pdf")
+        title!("After Phase IV")
+        savefig(P, "./figures/NormalJacobi_phase4.pdf")
     end
     
     return Tridiagonal(A)
