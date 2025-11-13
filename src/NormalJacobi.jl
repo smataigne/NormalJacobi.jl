@@ -1,22 +1,6 @@
 using LinearAlgebra, SkewLinearAlgebra, LaTeXStrings
 include("Utils.jl")
-include("NormalJacobi2.jl")
-
-"""
-    offSchur(A::AbstractMatrix)
-Compute the off-Schur Frobenius norm of a matrix A.
-"""
-function offSchur(A::AbstractMatrix)
-    Σ = 0
-    n = size(A, 1)
-    for i ∈ 1:2:n-2
-        for j ∈ i+2:n
-            Σ += A[j, i]^2 + A[j, i + 1]^2 
-        end
-    end
-    return sqrt(Σ)
-end
-
+include("NormalJacobiZhou.jl")
 """
     offdiag(A::AbstractMatrix)
 
@@ -106,7 +90,7 @@ function findzeros!(Σ::AbstractVector{T}) where T
     return zeros_indices[1:count]
 end
 
-@views function normalskewjacobi!(A::AbstractMatrix{T}, showphase::Bool) where T
+@views function normal_skew_jacobi!(A::AbstractMatrix{T}, showphase::Bool) where T
     n = size(A, 1)
     ε = eps(T) * norm(A) * sqrt(n)   #Matrix-wise norm bound
     εₘ = eps(T) * 10                 #Element-wise norm bound
@@ -321,7 +305,7 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
             #nk = length(kk)
             kk = l[1:nk]
             if nk > 2
-                normaljacobi!(A[kk, kk])
+                normal_jacobi_zhou!(A[kk, kk])
             else
                 solved[i:i+1] .= false
             end
@@ -339,7 +323,7 @@ heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, y
     return Tridiagonal(A)
 end
 
-normalskewjacobi(A::AbstractMatrix{T}) where T = normalskewjacobi!(copy(A), false)
+normal_skew_jacobi(A::AbstractMatrix{T}) where T = normal_skew_jacobi!(copy(A), false)
 
 
 

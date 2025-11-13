@@ -69,6 +69,22 @@ function jacobi_sym(x11::Number, x12::Number, x22::Number)
     return c, s
 end
 
+
+"""
+    offSchur(A::AbstractMatrix)
+Compute the off-Schur Frobenius norm of a matrix A.
+"""
+function offSchur(A::AbstractMatrix)
+    Σ = 0
+    n = size(A, 1)
+    for i ∈ 1:2:n-2
+        for j ∈ i+2:n
+            Σ += A[j, i]^2 + A[j, i + 1]^2 
+        end
+    end
+    return sqrt(Σ)
+end
+
 """
     create_matrix(n::Integer, α₁::Number, α₂::Number) -> Matrix{Float64}
 Create an n x n real matrix with specified proportions of real and complex eigenvalues.
