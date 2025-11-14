@@ -3,7 +3,7 @@ include("Utils.jl")
 """
 ```normal_jacobi_bunse!(A::AbstractMatrix)```
 
-In-place Jacobi method for a normal matrix:
+In-place Jacobi method for a normal matrix:\\
   Bunse-Gerstner, A., Byers, R., Mehrmann, V.: Numerical Methods for Simultaneous Diagonalization,
   SIAM J. Matrix Anal. Appl. 14 (4), 927--949, (1993),
    https://doi.org/10.1137/0614062 \\
@@ -14,8 +14,9 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
 @views function normal_jacobi_bunse!(A::AbstractMatrix)
     n = size(A, 1)
     T = typeof(A[1, 1])
-    ε = 100 *eps(T) * norm(A)
     εₘ = eps(T)
+    ε = 100 * εₘ * norm(A)
+    
     iter = 1
     itermax = 5 * sqrt(n)
     ii = zeros(Integer, 2)
@@ -23,14 +24,20 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     tv = zeros(T, n, 2)
     th = zeros(T, 2, n)
     th2 = zeros(T, 2, 4)
-    while offSchur(A) > ε && iter < itermax
+    offschur = offSchur(A)
+    while offschur > ε && iter < itermax
         #print("Accuracy at iter", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
         for i ∈ 1:2:n-2
             for j ∈ i+2:2:n-1
                 indices .= i, i+1, j, j+1
                 if norm(A[[j, j + 1],[i, i + 1]]) > εₘ
                     _, Q, v = schur(A[indices, indices])
-                    k₁, k₂, k₃, k₄ = 1, 2, 3, 4
+                    if iszero(imag(v[1])) && !iszero(imag(v[2])) 
+                        k₁, k₂, k₃, k₄ = 2, 3, 4, 1
+                    else
+                        k₁, k₂, k₃, k₄ = 1, 2, 3, 4
+                    end
+                    
                     #Compute and apply R(1,3)
                     num = Q[k₂, k₂] * Q[k₃, k₁] - Q[k₂, k₁] * Q[k₃, k₂]
                     den = Q[k₁, k₂] * Q[k₂, k₁] - Q[k₁, k₁] * Q[k₂, k₂]
@@ -103,23 +110,27 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                     tv .= A[:, ii]
                     @. A[:, i + 1] =  c * tv[:, 1] + -s * tv[:, 2]
                     @. A[:, j + 1] = s * tv[:, 1] + c * tv[:, 2]
-                    #display(Q)
+                    #display(A[indices, indices])
                 end
             end
         end
-        display(offSchur(A))
+        offschur = offSchur(A)
+        #display(offschur)
         iter += 1
     end
-    #print("Accuracy at iter ", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
     return Tridiagonal(A)
 end
 
 normal_jacobi_bunse(A::AbstractMatrix)= normal_jacobi_bunse!(copy(A))
-
-n = 20
-A = Matrix(qr(randn(Float64, n , n)).Q)
+#=
+n = 100
+A = Matrix(qr(randn(n, n)).Q)
 if det(A) < 0
-    A[:, 1] .= - A[:, 1]
+    #[:, 1] .= -A[:, 1]
 end
-T = normal_jacobi_bunse!(A)
-print("Done\n")
+H = (A + A') / 2
+Ω = (A - A') / 2
+A = H + 0.1 * Ω
+normal_jacobi_bunse!(copy(A))
+print("Done Bunse\n")
+=#

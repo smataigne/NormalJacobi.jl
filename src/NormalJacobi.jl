@@ -5,8 +5,8 @@ include("NormalJacobiZhou.jl")
 
 @views function normal_skew_jacobi!(A::AbstractMatrix{T}, showphase::Bool) where T
     n = size(A, 1)
-    ε = eps(T) * norm(A) * sqrt(n)   #Matrix-wise norm bound
-    εₘ = eps(T) * 10                 #Element-wise norm bound
+    ε = eps(T) * norm(A) * 100  #Matrix-wise norm bound
+    εₘ = eps(T)                 #Element-wise norm bound
     μ = sqrt(eps(T)) * norm(A)
     ii = zeros(Int64, 2)             #Indices for rows/columns selections
     th = zeros(T, 2, n)
