@@ -86,6 +86,95 @@ function offSchur(A::AbstractMatrix)
 end
 
 """
+    offdiag(A::AbstractMatrix)
+
+Compute the off-diagonal Frobenius norm of a symmetric matrix A.
+"""
+function offdiag(A::AbstractMatrix{<:Real})
+    Σ = 0
+    n = size(A, 1)
+    for i ∈ 1:n
+        for j ∈ (i+1):n
+            Σ += 2 * A[i, j]^2
+        end
+    end 
+    return sqrt(Σ)
+end
+
+"""
+    SSHjacobi!(A::AbstractMatrix{T}) where T
+
+In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of even size.
+"""
+@views function SSHjacobi!(A::AbstractMatrix{T}) where T
+    n = size(A, 1)
+    itermax = 10; iter = 1
+    n2 = n ÷ 2
+    ii = zeros(Int, 4)
+    p = zeros(T, 3)
+    R = zeros(T, 4, 4)
+    temp1 = zeros(T, 4, n)
+    temp2 = zeros(T, n, 4)
+    ε = eps(T) * 100 * norm(A)
+    while offdiag(A) > ε && iter < itermax
+        for i ∈ 1:n2-1
+            for j ∈ i+1:n2
+                ii .= i, j, i+n2, j+n2
+                #M = A[ii, ii]
+                #p .= -M[1, 4], 0.5*(M[1, 1] - M[2, 2]), M[1, 2]
+                p[1] = -A[i, j + n2]
+                p[2] = 0.5 * (A[i, i] - A[j, j])
+                p[3] = A[i, j]
+                α = norm(p)
+                β = α + p[2]
+                R[:, 1] .= β, -p[3], 0. , p[1]
+                R[:, 2] .= p[3], β, p[1], 0.
+                R[:, 3] .= 0. , -p[1], β, -p[3]
+                R[:, 4] .= -p[1], 0. , p[3], β
+                R .*= (1 / √(2 * α * β))
+                temp1 .= A[ii, :]
+                mul!(A[ii, :], R, temp1, 1, 0)
+                temp2 .= A[:, ii]
+                mul!(A[:, ii], temp2, R', 1, 0)
+            end
+        end
+        iter +=1
+    end
+    return A
+end
+
+"""
+    findzeros!(Σ::AbstractVector{T}) where T
+    
+Find the indices of the (approximate) zeros in the vector Σ.
+"""
+function findzeros!(Σ::AbstractVector{T}) where T
+    n = length(Σ)
+    n1 = n + 1
+    ε =  10 * eps(T) * norm(Σ)
+    zeros_indices = zeros(Int, n)
+    i = 1
+    count = 1
+    while i < n1 
+        if Σ[i] < ε
+            #push!(zeros_indices, i)
+            zeros_indices[count] = i
+            count += 1
+            i += 1
+        else
+            i += 2
+        end   
+    end
+    if i == n1 && Σ[end] < ε
+        #push!(zeros_indices, n1)
+        zeros_indices[count] = n1
+        count += 1
+    end
+    count -= 1
+    return zeros_indices[1:count]
+end
+
+"""
     create_matrix(n::Integer, α₁::Number, α₂::Number) -> Matrix{Float64}
 Create an n x n real matrix with specified proportions of real and complex eigenvalues.
 The parameters α₁ and α₂ determine the fractions of real and repeated complex eigenvalues, respectively

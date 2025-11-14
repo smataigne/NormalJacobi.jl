@@ -34,7 +34,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                 end
             end
         end
-        #display(offSchur(A))
+        display(offSchur(A))
         iter += 1
     end
     #print("Accuracy at iter ", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
