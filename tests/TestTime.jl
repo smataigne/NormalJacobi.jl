@@ -11,7 +11,7 @@ l1 = zeros(K)
 l2 = zeros(K)
 l3 = zeros(K)
 l4 = zeros(K)
-αs = [0.0 0.0; 0.1 0.0; 0.2 0.0; 0.3 0.0; 0.0 0.1; 0.0 0.2; 0.1 0.1; 0.2 0.2]  # You can add more (α, β) pairs if needed
+αs = [0.0 0.0; 0.2 0.0; 0.4 0.0; 0.0 0.2; 0.0 0.4; 0.2 0.2]  # You can add more (α, β) pairs if needed
 t = size(αs, 1)
 for k ∈ 1:t
     α₁ = αs[k, 1]
@@ -34,7 +34,7 @@ for k ∈ 1:t
 
     P = plot(framestyle=:box, legend=:topleft,font="Computer Modern", titlefont = "Computer Modern",tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
     legendfontsize=12,titlefontsize = 16, yguidefontsize=16,xguidefontsize=16, xtickfontsize = 13, ytickfontsize=13, margin = 0.4Plots.cm, minorgrid = false, yscale=:log, xscale=:log)
-    plot!(ns, l1, color = :blue, linestyle =:solid, markershape=:circle, label = "Ours (Skew)")
+    plot!(ns, l1, color = :blue, linestyle =:solid, markershape=:circle, label = "Algorithm 1")
     plot!(ns, l2, color = :red, linestyle =:dash, markershape=:diamond, label = "Bunse-Gerstner et al.")
     plot!(ns, l3, color = :green, linestyle =:dot, markershape=:star5, label = "Goldstine et al.")
     plot!(ns, l4, color = :black, linestyle =:dashdot, markershape=:rect, label = "Zhou et al.")

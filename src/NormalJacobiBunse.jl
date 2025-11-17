@@ -18,7 +18,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     ε = 100 * εₘ * norm(A)
     
     iter = 1
-    itermax = 5 * sqrt(n)
+    itermax = 5 * n
     ii = zeros(Integer, 2)
     indices = zeros(Integer, 4)
     tv = zeros(T, n, 2)
@@ -30,14 +30,13 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
         for i ∈ 1:2:n-2
             for j ∈ i+2:2:n-1
                 indices .= i, i+1, j, j+1
-                if norm(A[[j, j + 1],[i, i + 1]]) > εₘ
+                if norm(A[[j, j + 1],[i, i + 1]]) > 4εₘ
                     _, Q, v = schur(A[indices, indices])
                     if iszero(imag(v[1])) && !iszero(imag(v[2])) 
-                        k₁, k₂, k₃, k₄ = 2, 3, 4, 1
-                    else
-                        k₁, k₂, k₃, k₄ = 1, 2, 3, 4
+                        Base.permutecols!!(Q, [2, 3, 4, 1])
                     end
-                    
+                    k₁, k₂, k₃, k₄ = 1, 2, 3, 4
+                    i₁, i₂, j₁, j₂ = i, i + 1, j, j + 1
                     #Compute and apply R(1,3)
                     num = Q[k₂, k₂] * Q[k₃, k₁] - Q[k₂, k₁] * Q[k₃, k₂]
                     den = Q[k₁, k₂] * Q[k₂, k₁] - Q[k₁, k₁] * Q[k₂, k₂]
@@ -50,13 +49,13 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                     th2 .= Q[ii, :]
                     @. Q[k₁, :] =  c * th2[1, :] + -s * th2[2, :] 
                     @. Q[k₃, :] =  s * th2[1, :] + c * th2[2, :]
-                    ii .= i, j
+                    ii .= i₁, j₁
                     th .= A[ii, :]
-                    @. A[i, :] =  c * th[1, :] + -s * th[2, :] 
-                    @. A[j, :] =  s * th[1, :] + c * th[2, :]
+                    @. A[i₁, :] =  c * th[1, :] + -s * th[2, :] 
+                    @. A[j₁, :] =  s * th[1, :] + c * th[2, :]
                     tv .= A[:, ii]
-                    @. A[:, i] = c * tv[:, 1] + -s * tv[:, 2]
-                    @. A[:, j] = s * tv[:, 1] + c * tv[:, 2]
+                    @. A[:, i₁] = c * tv[:, 1] + -s * tv[:, 2]
+                    @. A[:, j₁] = s * tv[:, 1] + c * tv[:, 2]
                     #Compute and apply R(2,3)
                     #θ₂ = atan( - Q[k₃, k₂], Q[k₂, k₂])
                     #c, s = cos(θ₂), sin(θ₂)
@@ -67,13 +66,13 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                     th2 .= Q[ii, :]
                     @. Q[k₂, :] =  c * th2[1, :] + -s * th2[2, :] 
                     @. Q[k₃, :] =  s * th2[1, :] + c * th2[2, :]
-                    ii .= i + 1, j
+                    ii .= i₂, j₁
                     th .= A[ii, :]
-                    @. A[i + 1, :] =  c * th[1, :] + -s* th[2, :] 
-                    @. A[j, :] =  s * th[1, :] + c * th[2, :]
+                    @. A[i₂, :] =  c * th[1, :] + -s* th[2, :] 
+                    @. A[j₁, :] =  s * th[1, :] + c * th[2, :]
                     tv .= A[:, ii]
-                    @. A[:, i + 1] =  c * tv[:, 1] + -s * tv[:, 2]
-                    @. A[:, j] = s * tv[:, 1] + c * tv[:, 2]
+                    @. A[:, i₂] =  c * tv[:, 1] + -s * tv[:, 2]
+                    @. A[:, j₁] = s * tv[:, 1] + c * tv[:, 2]
                     # Compute and apply R(1,4) 
                     num = Q[k₂, k₂] * Q[k₄, k₁] - Q[k₂, k₁] * Q[k₄, k₂]
                     den = Q[k₁, k₂] * Q[k₂, k₁] - Q[k₁, k₁] * Q[k₂, k₂]
@@ -86,13 +85,13 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                     th2 .= Q[ii, :]
                     @. Q[k₁, :] =  c * th2[1, :] + -s * th2[2, :] 
                     @. Q[k₄, :] =  s * th2[1, :] + c * th2[2, :]
-                    ii .= i, j + 1
+                    ii .= i₁, j₂
                     th .= A[ii, :]
-                    @. A[i, :] =  c * th[1, :] + -s * th[2, :] 
-                    @. A[j + 1, :] =  s * th[1, :] + c * th[2, :]
+                    @. A[i₁, :] =  c * th[1, :] + -s * th[2, :] 
+                    @. A[j₂, :] =  s * th[1, :] + c * th[2, :]
                     tv .= A[:, ii]
-                    @. A[:, i] =  c * tv[:, 1] + -s * tv[:, 2]
-                    @. A[:, j + 1] = s * tv[:, 1] + c * tv[:, 2]
+                    @. A[:, i₁] =  c * tv[:, 1] + -s * tv[:, 2]
+                    @. A[:, j₂] = s * tv[:, 1] + c * tv[:, 2]
                     # Compute and apply R(2,4)
                     #θ₄ = atan( - Q[k₄, k₂], Q[k₂, k₂])
                     #c, s = cos(θ₄), sin(θ₄)
@@ -103,14 +102,14 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                     th2 .= Q[ii, :]
                     @. Q[k₂, :] =  c * th2[1, :] + -s * th2[2, :] 
                     @. Q[k₄, :] =  s * th2[1, :] + c * th2[2, :]
-                    ii .= i + 1, j + 1
+                    ii .= i₂, j₂
                     th .= A[ii, :]
-                    @. A[i + 1, :] =  c * th[1, :] + -s * th[2, :] 
-                    @. A[j + 1, :] =  s * th[1, :] + c * th[2, :]
+                    @. A[i₂, :] =  c * th[1, :] + -s * th[2, :] 
+                    @. A[j₂, :] =  s * th[1, :] + c * th[2, :]
                     tv .= A[:, ii]
-                    @. A[:, i + 1] =  c * tv[:, 1] + -s * tv[:, 2]
-                    @. A[:, j + 1] = s * tv[:, 1] + c * tv[:, 2]
-                    #display(A[indices, indices])
+                    @. A[:, i₂] =  c * tv[:, 1] + -s * tv[:, 2]
+                    @. A[:, j₂] = s * tv[:, 1] + c * tv[:, 2]
+                    
                 end
             end
         end
@@ -130,7 +129,7 @@ if det(A) < 0
 end
 H = (A + A') / 2
 Ω = (A - A') / 2
-A = H + 0.1 * Ω
+A = H + 0.2 * Ω
 normal_jacobi_bunse!(copy(A))
 print("Done Bunse\n")
 =#

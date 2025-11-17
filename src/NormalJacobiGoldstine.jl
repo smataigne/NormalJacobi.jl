@@ -24,7 +24,7 @@ function offdiag(A::AbstractMatrix{<:Complex})
             Σ += abs(A[i, j])^2 + abs(A[j, i])^2
         end
     end 
-    return Σ
+    return sqrt(Σ)
 end
 
 """
@@ -46,7 +46,7 @@ Output: The diagonal form of A in a `Diagonal` matrix.
     εₘ = eps(real(T))
     ε = 100 * εₘ * norm(A)
     iter = 1
-    itermax = 5 * sqrt(n)
+    itermax = 5 * n
     ii = zeros(Integer, 2)
     tv = zeros(T, n, 2)
     th = zeros(T, 2, n)

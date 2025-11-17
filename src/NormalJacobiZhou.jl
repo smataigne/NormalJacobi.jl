@@ -15,9 +15,9 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     n = size(A, 1)
     T = typeof(A[1, 1])
     εₘ = eps(T)
-    ε = 100 * εₘ * norm(A)
+    ε  = 100 * εₘ * norm(A)
     iter = 1
-    itermax = 5 * sqrt(n)
+    itermax = 5 * n
     indices = zeros(Integer, 4)
     temp1  = zeros(T, n, 4)
     temp2 = zeros(T, 4, n)
@@ -26,14 +26,11 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
         for i ∈ 1:2:n-2
             for j ∈ i+2:2:n-1
                 indices .= i, i+1, j, j+1
-                if norm(A[[j, j + 1],[i, i + 1]]) > εₘ
+                if norm(A[[j, j + 1],[i, i + 1]]) > 4εₘ
                     _, Q, v = schur(A[indices, indices])
                     if iszero(imag(v[1])) && !iszero(imag(v[2])) 
-                        k₁, k₂, k₃, k₄ = 2, 3, 4, 1
-                    else
-                        k₁, k₂, k₃, k₄ = 1, 2, 3, 4
+                        Base.permutecols!!(Q, [2, 3, 4, 1])
                     end
-                    Base.permutecols!!(Q, [k₁, k₂, k₃, k₄])
                     mul!(temp2, Q' , A[indices, :], 1, 0)
                     A[indices, :] .= temp2
                     mul!(temp1, A[:, indices], Q, 1, 0)

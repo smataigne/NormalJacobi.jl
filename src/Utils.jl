@@ -198,7 +198,7 @@ function create_matrix(n::Integer, α₁::Number, α₂::Number)
     p = n - a₁ - a₂
     s = randn(p ÷ 2)
     d[(a₁ + a₂ + 1):end] = invpermute!([s; s], [1:2:p;2:2:p])
-    sd[(a₁ + a₂ + 1):2:end] .= randn(p÷2)#1 .+  0.01*√(eps(Float64))  * randn(p÷2)
+    sd[(a₁ + a₂ + 1):2:end] .= randn(p÷2)
     return Matrix(Q * Tridiagonal(sd, d, -sd) * Q')
 end
 
@@ -228,4 +228,23 @@ function create_matrix2(n::Integer, α₁::Number, α₂::Number)
     d[(a₁ + a₂ + 1):end] = invpermute!([s; s], [1:2:p;2:2:p])
     sd[(a₁ + a₂ + 1):2:end] .= 1 .+  0.01*√(eps(Float64))  * randn(p÷2)
     return Matrix(Q * Tridiagonal(sd, d, -sd) * Q')
+end
+
+@views function create_matrix3(θs::AbstractVector, λs::AbstractVector, κ::AbstractVector)
+    p = length(θs) 
+    r = length(λs)
+    n = 2p + r
+    QR = qr(randn(n, n))
+    Q = Matrix(QR.Q) * Diagonal(sign.(diag(QR.R)))
+    M = similar(Q, n, n)
+    for (i, θ) ∈  enumerate(θs)
+        c = κ[i] * cos(θ); s = κ[i] * sin(θ)
+        j = 2i - 1
+        M[:, j]     .=  c * Q[:, j] + s * Q[:, j + 1]
+        M[:, j + 1] .= -s * Q[:, j] + c * Q[:, j + 1]
+    end
+    for (i, λ) ∈ enumerate(λs)
+        M[:, 2p + i] .= (λ .* Q[:, 2p+i])
+    end
+    return M * Q'
 end

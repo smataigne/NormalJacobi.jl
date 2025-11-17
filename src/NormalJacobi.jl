@@ -5,9 +5,9 @@ include("NormalJacobiZhou.jl")
 
 @views function normal_skew_jacobi!(A::AbstractMatrix{T}, showphase::Bool) where T
     n = size(A, 1)
-    ε = eps(T) * norm(A) * 100  #Matrix-wise norm bound
-    εₘ = eps(T)                 #Element-wise norm bound
-    μ = sqrt(eps(T)) * norm(A)
+    ε  = eps(T) * norm(A) * 100  #Matrix-wise norm bound
+    εₘ = eps(T)                  #Element-wise norm bound
+    μ = 0.1                      #Tolerance for grouping singular values
     ii = zeros(Int64, 2)             #Indices for rows/columns selections
     th = zeros(T, 2, n)
     tv = zeros(T, n, 2)
@@ -119,7 +119,7 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
     while offdiag(M) > ε && iter < itermax
         for i ∈ 1:K-1
             for j ∈ i+1:K
-                if abs(M[j, i]) > ε / sqrt(n)
+                if abs(M[j, i]) > εₘ
                     c, s = jacobi_sym(M[i, i], M[j, i], M[j, j])
                     #G = [c -s; s c]
                     #M[[i, j], :] = G' * M[[i, j], :]
@@ -174,11 +174,8 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
                     solved[j:j+1] .= true
                 end
             end
-            #nk = length(kk)
             kk = l[1:nk]
             if nk > 2
-                #display(kk)
-
                 M = copy(A[kk, kk] + A[kk, kk]')
                 M .*= 0.5
                 indices = [1:2:nk; 2:2:nk]
@@ -218,7 +215,7 @@ legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytick
             #nk = length(kk)
             kk = l[1:nk]
             if nk > 2
-                normal_jacobi_zhou!(A[kk, kk])
+                normal_jacobi_bunse!(A[kk, kk])
             else
                 solved[i:i+1] .= false
             end
@@ -237,6 +234,17 @@ heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, y
 end
 
 normal_skew_jacobi(A::AbstractMatrix{T}) where T = normal_skew_jacobi!(copy(A), false)
+
+#=
+n = 300
+A = Matrix(qr(randn(n, n)).Q)
+normal_skew_jacobi!(A, false)
+ P = plot(framestyle=:none, legend=:topright,font="Computer Modern", tickfontfamily="Computer Modern",legendfont="Computer Modern", guidefontfamily = "Computer Modern",
+legendfontsize=10,yguidefontsize=13,xguidefontsize=13, xtickfontsize = 13, ytickfontsize=13, margin = 0.3Plots.cm, minorgrid = false, titlefontfamily="Computer Modern", titlefontsize=20, aspect_ratio=1)
+heatmap!(log10.(max.(abs.(A), eps(Float64))), colormap=:viridis, xticks=false, yticks=false, colorbar_fontsize=1, clim=(-15, 0), colorbar=false; yflip=true)
+display(P)
+offSchur(A)/ norm(A)
+=#
 
 
 
