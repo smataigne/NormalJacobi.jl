@@ -15,14 +15,15 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     n = size(A, 1)
     T = typeof(A[1, 1])
     εₘ = eps(T)
-    ε  = 100 * εₘ * norm(A)
+    ε  = 10 * εₘ * norm(A)
     iter = 1
     itermax = 5 * n
     indices = zeros(Integer, 4)
     temp1  = zeros(T, n, 4)
     temp2 = zeros(T, 4, n)
+    oldoff = Inf
     offschur = offSchur(A)
-    while offschur > ε && iter < itermax
+    while offschur > ε && iter < itermax && offschur < oldoff
         for i ∈ 1:2:n-2
             for j ∈ i+2:2:n-1
                 indices .= i, i+1, j, j+1
@@ -38,9 +39,15 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                 end
             end
         end
+        oldoff = offschur
         offschur = offSchur(A)
         iter += 1
     end
+    
+    if iter == itermax
+        @warn "Maximum number of iterations reached in normal_jacobi_zhou!"
+    end
+
     return Tridiagonal(A)
 end
 

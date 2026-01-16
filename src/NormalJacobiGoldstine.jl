@@ -44,14 +44,15 @@ Output: The diagonal form of A in a `Diagonal` matrix.
     n = size(A, 1)
     T = eltype(A)
     εₘ = eps(real(T))
-    ε = 100 * εₘ * norm(A)
+    ε = 10 * εₘ * norm(A)
     iter = 1
     itermax = 5 * n
     ii = zeros(Integer, 2)
     tv = zeros(T, n, 2)
     th = zeros(T, 2, n)
+    oldoff = Inf
     offd = offdiag(A)
-    while offd> ε && iter < itermax
+    while offd> ε && iter < itermax && offd < oldoff
         for i ∈ 1:n
             for j ∈ i+1:n
                 if abs(A[i, j]) > εₘ || abs(A[j, i]) > εₘ
@@ -78,9 +79,15 @@ Output: The diagonal form of A in a `Diagonal` matrix.
                 end
             end
         end
+        oldoff = offd
         offd = offdiag(A)
         iter += 1
     end
+
+    if iter == itermax
+        @warn "Maximum number of iterations reached in normal_jacobi_goldstine!"
+    end
+
     return Diagonal(A)
 end
 

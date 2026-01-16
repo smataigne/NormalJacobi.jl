@@ -31,7 +31,9 @@ Jacobi-like algorithm for symmetric skew-Hamiltonian matrices.
     p = zeros(T, 3)
     R = zeros(T, 4, 4)
     ε = eps(T) * 100 * norm(A)
-    while offdiag(A) > ε && iter < itermax
+    oldoff = Inf
+    offdiagA = offdiag(A)
+    while offdiagA > ε && iter < itermax && offdiagA < oldoff
         for i ∈ 1:n2-1
             for j ∈ i+1:n2
                 ii .= i, j, i+n2, j+n2
@@ -40,28 +42,33 @@ Jacobi-like algorithm for symmetric skew-Hamiltonian matrices.
                 α = norm(p)
                 β = α + p[2]
                 R[1, :] .= β, p[3], 0, -p[1]
-                R[2, :] .= -p[3], β, -p[1], 0
-                R[3, :] .= 0, p[1], β, p[3]
+                R[2, :] .= 0, p[1], β, p[3]
+                R[3, :] .= -p[3], β, -p[1], 0
                 R[4, :] .= p[1], 0, -p[3], β
                 R .*= (1 / √(2 * α * β))
                 A[ii, :] .= R * A[ii, :]
                 A[:, ii] .= A[:, ii] * R'
             end
         end
-        display(offdiag(A))
+        #display(offdiag(A))
+        oldoff = offdiagA
+        offdiagA = offdiag(A)
         iter +=1
     end
     return A
 end
 
-n = 2
+#Simple test
+
+n = 3
 W = randn(n,n)
 X = randn(n,n)
 W = W + W'
 X = X - X'
 A = [W -X; X W]
 B = copy(A)
-display(B[[1;3;2;4],[1;3;2;4]])
+B = B[[1;3;5;2;4;6],[1;3;5;2;4;6]]
+display(B)
 SSHjacobi!(B)
 display(B)
 print("ok \n")

@@ -1,18 +1,25 @@
-using LinearAlgebra, SkewLinearAlgebra, LaTeXStrings
+using LinearAlgebra, SkewLinearAlgebra, LaTeXStrings, PyPlot, PyCall
 include("Utils.jl")
 include("NormalJacobiZhou.jl")
 include("NormalJacobiBunse.jl")
 include("UtilsJacobi.jl")
 
 
-@views function normal_skew_jacobi!(A::AbstractMatrix{T}, showphase::Bool) where T
+@views function normal_skew_jacobi_plots!(A::AbstractMatrix{T}, showphase::Bool) where T
+    PyPlot.matplotlib.rc("text", usetex=true)
+    PyPlot.matplotlib.rc("font", family="serif", serif=["Computer Modern"])
+    PyPlot.matplotlib.rc("mathtext", fontset="cm")
+    pnorm = PyCall.pyimport("matplotlib.colors").LogNorm(
+    vmin = eps(Float64),
+    vmax = 1
+    )
     n = size(A, 1)
     ε  = eps(T) * norm(A) * 10        #Matrix-wise norm bound
     n2 = opnorm(A) * 10
     εₘ = eps(T)                  #Element-wise norm bound
     η = 10 * n / n2
     μ  = η * ε                  #Target accuracy for clustering
-    μₘ = η * εₘ                 #Element-wise target accuracy for clustering
+    μₘ = η * εₘ                #Element-wise target accuracy for clustering
     ii = zeros(Int64, 2)         #Indices for rows/columns selections
     th = zeros(T, 2, n)
     tv = zeros(T, n, 2)
@@ -22,6 +29,14 @@ include("UtilsJacobi.jl")
     Ω .= (A .- A') / 2
     oldoff = Inf
     offschur = offSchur(Ω)
+    if showphase == true
+        fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("Initial Matrix " * L"A", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase0.pdf")
+    end
     #Phase I  Implicit Paardekooper
     while offschur > ε && iter < itermax && offschur < oldoff
         for i ∈ 1:2:n-3
@@ -92,6 +107,14 @@ include("UtilsJacobi.jl")
         iter +=1
     end
 
+    if showphase == true
+        fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("After Phase I", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase1.pdf")
+    end
     #Early stopping
     if offSchur(A) < ε
         return Tridiagonal(A) 
@@ -158,6 +181,14 @@ include("UtilsJacobi.jl")
             #println("Done Phase 2 - Case II.2,  nk = ", length(kk))
         end
     end 
+    if showphase == true
+        fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("After Phase II", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase2.pdf")
+    end
 
     #Phase 3: Implicit Symmetric Skew-Hamiltonian Jacobi algorithm
     
@@ -232,16 +263,37 @@ include("UtilsJacobi.jl")
         end
         i += 2
     end
+    if showphase == true
+        fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        cb = fig.colorbar(c, ax=ax, norm=norm)
+        ticks = [eps(Float64), sqrt(eps(Float64)), 1.0]
+        ticks_labels = [L"\varepsilon_\mathrm{m}", L"\sqrt{\varepsilon}_\mathrm{m}", L"1"]
+        cb.set_ticks(ticks)
+        cb.set_ticklabels(ticks_labels, fontsize=20)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("After Phase III", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase3.pdf")
+    end
     #Phase 4: Accuracy loss correction
     if offSchur(A) > ε
         normal_jacobi_bunse!(A)
         #println("Done Phase 4 - Accuracy correction")
     end
+    if showphase == true
+        fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("After Phase IV", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase4.pdf")
+    end
     
     return Tridiagonal(A)
 end
 
-normal_skew_jacobi(A::AbstractMatrix{T}) where T = normal_skew_jacobi!(copy(A), false)
+normal_skew_jacobi_plots(A::AbstractMatrix{T}) where T = normal_skew_jacobi_plots!(copy(A), true)
 
 
 

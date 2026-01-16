@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.10) (preloaded format=pdflatex 2022.12.6)  13 NOV 2025 15:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 22.10) (preloaded format=pdflatex 2022.12.6)  16 JAN 2026 15:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -458,48 +458,53 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 fg
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
-<NormalJacobi_phase0.pdf, id=4, 602.25pt x 401.5pt>
+<NormalJacobi_phase0.pdf, id=4, 462.52798pt x 346.89601pt>
 File: NormalJacobi_phase0.pdf Graphic file (type pdf)
 <use NormalJacobi_phase0.pdf>
 Package pdftex.def Info: NormalJacobi_phase0.pdf  used on input line 10.
-(pdftex.def)             Requested size: 284.52756pt x 189.69136pt.
-<NormalJacobi_phase2.pdf, id=5, 602.25pt x 401.5pt>
+(pdftex.def)             Requested size: 284.52756pt x 213.40594pt.
+<NormalJacobi_phase2.pdf, id=5, 462.52798pt x 346.89601pt>
 File: NormalJacobi_phase2.pdf Graphic file (type pdf)
 <use NormalJacobi_phase2.pdf>
 Package pdftex.def Info: NormalJacobi_phase2.pdf  used on input line 11.
-(pdftex.def)             Requested size: 284.52756pt x 189.69136pt.
-<NormalJacobi_phase4.pdf, id=6, 602.25pt x 401.5pt>
+(pdftex.def)             Requested size: 284.52756pt x 213.40594pt.
+<NormalJacobi_phase4.pdf, id=6, 462.52798pt x 346.89601pt>
 File: NormalJacobi_phase4.pdf Graphic file (type pdf)
 <use NormalJacobi_phase4.pdf>
 Package pdftex.def Info: NormalJacobi_phase4.pdf  used on input line 12.
-(pdftex.def)             Requested size: 284.52756pt x 189.69136pt.
-<NormalJacobi_phase3.pdf, id=7, 602.25pt x 401.5pt>
+(pdftex.def)             Requested size: 284.52756pt x 213.40594pt.
+<NormalJacobi_phase3.pdf, id=7, 462.52798pt x 346.89601pt>
 File: NormalJacobi_phase3.pdf Graphic file (type pdf)
 <use NormalJacobi_phase3.pdf>
 Package pdftex.def Info: NormalJacobi_phase3.pdf  used on input line 13.
-(pdftex.def)             Requested size: 284.52756pt x 189.69136pt.
-<NormalJacobi_phase1.pdf, id=8, 602.25pt x 401.5pt>
+(pdftex.def)             Requested size: 284.52756pt x 213.40594pt.
+<NormalJacobi_phase1.pdf, id=8, 462.52798pt x 346.89601pt>
 File: NormalJacobi_phase1.pdf Graphic file (type pdf)
 <use NormalJacobi_phase1.pdf>
 Package pdftex.def Info: NormalJacobi_phase1.pdf  used on input line 14.
-(pdftex.def)             Requested size: 284.52756pt x 189.69136pt.
+(pdftex.def)             Requested size: 284.52756pt x 213.40594pt.
  [1
 
- <./NormalJacobi_phase0.pdf> <./NormalJacobi_phase2.pdf> <./NormalJacobi_phase4
-.pdf> <./NormalJacobi_phase3.pdf> <./NormalJacobi_phase1.pdf>]
-(AssemblePlots.aux) ) 
+ <./NormalJacobi_phase0.pdf{C:/Users/simon/AppData/Local/MiKTeX/fonts/map/pdfte
+x/pdftex.map}> <./NormalJacobi_phase2.pdf> <./NormalJacobi_phase4.pdf> <./Norma
+lJacobi_phase3.pdf> <./NormalJacobi_phase1.pdf>] (AssemblePlots.aux) ) 
 Here is how much of TeX's memory you used:
- 12476 strings out of 475385
- 264885 string characters out of 2776907
+ 12477 strings out of 475385
+ 264897 string characters out of 2776907
  570812 words of memory out of 3000000
  33653 multiletter control sequences out of 15000+600000
  469259 words of font info for 28 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  100i,7n,104p,424b,700s stack positions out of 10000i,1000n,20000p,200000b,80000s
-
-Output written on AssemblePlots.pdf (1 page, 183788 bytes).
+<C:/Users
+/simon/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi12.pfb>
+<C:/Users/simon/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cm
+r12.pfb><C:/Users/simon/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfon
+ts/cm/cmr17.pfb><C:/Users/simon/AppData/Local/Programs/MiKTeX/fonts/type1/publi
+c/amsfonts/cm/cmsy10.pfb>
+Output written on AssemblePlots.pdf (1 page, 154995 bytes).
 PDF statistics:
- 19 PDF objects out of 1000 (max. 8388607)
+ 70 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  38 words of extra memory for PDF output out of 10000 (max. 10000000)
 

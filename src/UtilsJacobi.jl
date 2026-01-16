@@ -1,7 +1,8 @@
 using LinearAlgebra
+
 include("Utils.jl")
 """
-```normal_jacobi_bunse!(A::AbstractMatrix)```
+```normal_jacobi_bunse2!(A::AbstractMatrix)```
 
 In-place Jacobi method for a normal matrix:\\
   Bunse-Gerstner, A., Byers, R., Mehrmann, V.: Numerical Methods for Simultaneous Diagonalization,
@@ -11,33 +12,33 @@ In-place Jacobi method for a normal matrix:\\
 Input:  - a normal matrix `A`.\\
 Output: The real Schur form of a in a `Tridiagonal` matrix.
 """
-@views function normal_jacobi_bunse!(A::AbstractMatrix)
+@views function normal_jacobi_bunse2!(A::AbstractMatrix, kk::Vector{Int})
     n = size(A, 1)
     T = typeof(A[1, 1])
     εₘ = eps(T)
-    ε = 10 * εₘ * norm(A)
-    
+    ε = 10 * εₘ * norm(A[kk, kk])
+    nk = length(kk)
     iter = 1
-    itermax = 5 * n
+    itermax = 5 * nk
     ii = zeros(Integer, 2)
     indices = zeros(Integer, 4)
     tv = zeros(T, n, 2)
     th = zeros(T, 2, n)
     th2 = zeros(T, 2, 4)
     oldoff = Inf
-    offschur = offSchur(A)
+    offschur = offSchur(A[kk, kk])
     while offschur > ε && iter < itermax && offschur < oldoff
         #print("Accuracy at iter", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
-        for i ∈ 1:2:n-2
-            for j ∈ i+2:2:n-1
-                indices .= i, i+1, j, j+1
-                if norm(A[[j, j + 1],[i, i + 1]]) > 4εₘ
+        for i ∈ 1:2:nk-2
+            for j ∈ i+2:2:nk-1
+                indices .= kk[i], kk[i+1], kk[j], kk[j+1]
+                if norm(A[[kk[j], kk[j + 1]],[kk[i], kk[i + 1]]]) > 4εₘ
                     _, Q, v = schur(A[indices, indices])
                     if iszero(imag(v[1])) && !iszero(imag(v[2])) 
                         Base.permutecols!!(Q, [2, 3, 4, 1])
                     end
                     k₁, k₂, k₃, k₄ = 1, 2, 3, 4
-                    i₁, i₂, j₁, j₂ = i, i + 1, j, j + 1
+                    i₁, i₂, j₁, j₂ = kk[i], kk[i+1], kk[j], kk[j+1]
                     #Compute and apply R(1,3)
                     num = Q[k₂, k₂] * Q[k₃, k₁] - Q[k₂, k₁] * Q[k₃, k₂]
                     den = Q[k₁, k₂] * Q[k₂, k₁] - Q[k₁, k₁] * Q[k₂, k₂]
@@ -115,7 +116,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
             end
         end
         oldoff = offschur
-        offschur = offSchur(A)
+        offschur = offSchur(A[kk, kk])
         #display(offschur)
         iter += 1
     end
@@ -127,16 +128,55 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     return Tridiagonal(A)
 end
 
-normal_jacobi_bunse(A::AbstractMatrix)= normal_jacobi_bunse!(copy(A))
-#=
-n = 100
-A = Matrix(qr(randn(n, n)).Q)
-if det(A) < 0
-    #[:, 1] .= -A[:, 1]
+"""
+    SSHjacobi2!(A::AbstractMatrix{T}) where T
+
+In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of even size.
+"""
+@views function SSHjacobi2!(A::AbstractMatrix{T}, kk::AbstractVector{Int} ) where T
+    n = size(A, 1)
+    itermax = 10; iter = 1
+    nk = length(kk)
+    ii = zeros(Int, 4)
+    p = zeros(T, 3)
+    R = zeros(T, 4, 4)
+    temp1 = zeros(T, 4, n)
+    temp2 = zeros(T, n, 4)
+    ε = eps(T) * 100 * norm(A)
+    oldoff = Inf
+    offdiagA = offSchur(A[kk, kk])
+    while offdiagA > ε && iter < itermax && offdiagA < oldoff
+        for i ∈ 1:2:nk-3
+            for j ∈ i+2:2:nk-1
+                #ii .= i, i+1, j, j+1
+                ii .= kk[i], kk[i+1], kk[j], kk[j+1]
+                #Take the symmetric skew-Hamiltonian part
+                w₁ = 0.5 * (A[ii[1], ii[1]] + A[ii[2], ii[2]])
+                w₂ = 0.25 * (A[ii[1], ii[3]] + A[ii[3], ii[1]] + A[ii[2], ii[4]] + A[ii[4], ii[2]])
+                w₃ = 0.5 * (A[ii[3], ii[3]] + A[ii[4], ii[4]])
+                x = 0.25 * (A[ii[1], ii[4]] - A[ii[2], ii[3]] - A[ii[3], ii[2]] + A[ii[1], ii[4]])
+                p[1] = -x
+                p[2] = 0.5 * (w₁ - w₃)
+                p[3] = w₂
+                #p[1] = -A[ii[1], ii[4]]
+                #p[2] = 0.5 * (A[ii[1], ii[1]] - A[ii[3], ii[3]])
+                #p[3] = A[ii[1], ii[3]]
+                α = norm(p)
+                β = α + p[2]
+                R[:, 1] .= β, 0.0, -p[3], p[1]
+                R[:, 3] .= p[3], p[1], β, 0.
+                R[:, 2] .= 0. , β, -p[1], -p[3]
+                R[:, 4] .= -p[1], p[3], 0.0, β
+                R .*= (1 / √(2 * α * β))
+                temp1 .= A[ii, :]
+                mul!(A[ii, :], R, temp1, 1, 0)
+                temp2 .= A[:, ii]
+                mul!(A[:, ii], temp2, R', 1, 0)
+            end
+        end
+        iter +=1
+        oldoff = offdiagA
+        offdiagA = offSchur(A[kk, kk])
+    end
+    return A
 end
-H = (A + A') / 2
-Ω = (A - A') / 2
-A = H + 0.2 * Ω
-normal_jacobi_bunse!(copy(A))
-print("Done Bunse\n")
-=#

@@ -44,7 +44,7 @@ function paardekooper(a::Number, b::Number, e::Number, d::Number)
         return c₁, s₁, 0, 1
     end
     =#
-    #Unstable implementation
+    #Simple implementation
     α₁ = 0.5 * atan(2 * (a * e + b * d) / ( a^2 + b^2 - d^2 - e^2))
     c₁ = cos(α₁); s₁ = sin(α₁);
     α₂ = atan((s₁ * a - c₁ * e) / (c₁ * d - s₁ * b))
@@ -90,12 +90,12 @@ end
 
 Compute the off-diagonal Frobenius norm of a symmetric matrix A.
 """
-function offdiag(A::AbstractMatrix{<:Real})
+function offdiag(A::AbstractMatrix)
     Σ = 0
     n = size(A, 1)
     for i ∈ 1:n
         for j ∈ (i+1):n
-            Σ += 2 * A[i, j]^2
+            Σ += 2 * abs(A[i, j])^2
         end
     end 
     return sqrt(Σ)
@@ -116,7 +116,9 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
     temp1 = zeros(T, 4, n)
     temp2 = zeros(T, n, 4)
     ε = eps(T) * 100 * norm(A)
-    while offdiag(A) > ε && iter < itermax
+    oldoff = Inf
+    offdiagA = offdiag(A)
+    while offdiagA > ε && iter < itermax && offdiagA < oldoff
         for i ∈ 1:n2-1
             for j ∈ i+1:n2
                 ii .= i, j, i+n2, j+n2
@@ -139,6 +141,8 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
             end
         end
         iter +=1
+        oldoff = offdiagA
+        offdiagA = offdiag(A)
     end
     return A
 end
@@ -148,103 +152,22 @@ end
     
 Find the indices of the (approximate) zeros in the vector Σ.
 """
-function findzeros!(Σ::AbstractVector{T}) where T
+function findzeros!(Σ::AbstractVector{T}, ε::Number) where T
     n = length(Σ)
-    n1 = n + 1
-    ε =  10 * eps(T) * norm(Σ)
-    zeros_indices = zeros(Int, n)
-    i = 1
-    count = 1
-    while i < n1 
-        if Σ[i] < ε
-            #push!(zeros_indices, i)
-            zeros_indices[count] = i
-            count += 1
-            i += 1
+    zeros_indices = zeros(Int, n + 1)  #s₀ in the paper
+    i = 1; count = 0
+    maxval = 0.0
+    τ₀ = Inf
+    for i ∈ 1:2:n
+        if abs(Σ[i]) < ε
+            zeros_indices[count + 1] = i
+            zeros_indices[count + 2] = i + 1
+            maxval = max(maxval, Σ[i])
+            count += 2
         else
-            i += 2
+            τ₀ = min(τ₀, abs(Σ[i] - maxval))
         end   
     end
-    if i == n1 && Σ[end] < ε
-        #push!(zeros_indices, n1)
-        zeros_indices[count] = n1
-        count += 1
-    end
-    count -= 1
-    return zeros_indices[1:count]
+    return zeros_indices[1:count], τ₀  #s₀ in the paper
 end
 
-"""
-    create_matrix(n::Integer, α₁::Number, α₂::Number) -> Matrix{Float64}
-Create an n x n real matrix with specified proportions of real and complex eigenvalues.
-The parameters α₁ and α₂ determine the fractions of real and repeated complex eigenvalues, respectively
-"""
-function create_matrix(n::Integer, α₁::Number, α₂::Number)
-    Q = Matrix(qr(randn(n, n)).Q)
-    d = zeros(n)
-    sd = zeros(n - 1) 
-    a₁ = floor(Int, α₁ * n)
-    if isodd(a₁)  && iseven(n)  # Ensure a₁ is even if n is even
-        a₁ -= 1
-    end
-    a₂ = floor(Int, α₂ * n)
-    if isodd(a₂)  
-        a₂ -= 1
-    end
-    s = randn(a₂ ÷ 2)
-    d[1:a₁] = randn(a₁)
-    d[(a₁+1):(a₁+a₂)] = invpermute!([s; s], [1:2:a₂;2:2:a₂])
-    sd[(a₁+1):2:(a₁+a₂ - 1)] .= randn()
-    p = n - a₁ - a₂
-    s = randn(p ÷ 2)
-    d[(a₁ + a₂ + 1):end] = invpermute!([s; s], [1:2:p;2:2:p])
-    sd[(a₁ + a₂ + 1):2:end] .= randn(p÷2)
-    return Matrix(Q * Tridiagonal(sd, d, -sd) * Q')
-end
-
-"""
-    create_matrix(n::Integer, α₁::Number, α₂::Number) -> Matrix{Float64}
-Create an n x n real matrix with specified proportions of real and complex eigenvalues.
-The parameters α₁ and α₂ determine the fractions of real and repeated complex eigenvalues, respectively
-"""
-function create_matrix2(n::Integer, α₁::Number, α₂::Number)
-    Q = Matrix(qr(randn(n, n)).Q)
-    d = zeros(n)
-    sd = zeros(n - 1) 
-    a₁ = floor(Int, α₁ * n)
-    if isodd(a₁)  && iseven(n)  # Ensure a₁ is even if n is even
-        a₁ -= 1
-    end
-    a₂ = floor(Int, α₂ * n)
-    if isodd(a₂)  
-        a₂ -= 1
-    end
-    s = randn(a₂ ÷ 2)
-    d[1:a₁] = randn(a₁)
-    d[(a₁+1):(a₁+a₂)] = invpermute!([s; s], [1:2:a₂;2:2:a₂])
-    sd[(a₁+1):2:(a₁+a₂ - 1)] .= randn()
-    p = n - a₁ - a₂
-    s = randn(p ÷ 2)
-    d[(a₁ + a₂ + 1):end] = invpermute!([s; s], [1:2:p;2:2:p])
-    sd[(a₁ + a₂ + 1):2:end] .= 1 .+  0.01*√(eps(Float64))  * randn(p÷2)
-    return Matrix(Q * Tridiagonal(sd, d, -sd) * Q')
-end
-
-@views function create_matrix3(θs::AbstractVector, λs::AbstractVector, κ::AbstractVector)
-    p = length(θs) 
-    r = length(λs)
-    n = 2p + r
-    QR = qr(randn(n, n))
-    Q = Matrix(QR.Q) * Diagonal(sign.(diag(QR.R)))
-    M = similar(Q, n, n)
-    for (i, θ) ∈  enumerate(θs)
-        c = κ[i] * cos(θ); s = κ[i] * sin(θ)
-        j = 2i - 1
-        M[:, j]     .=  c * Q[:, j] + s * Q[:, j + 1]
-        M[:, j + 1] .= -s * Q[:, j] + c * Q[:, j + 1]
-    end
-    for (i, λ) ∈ enumerate(λs)
-        M[:, 2p + i] .= (λ .* Q[:, 2p+i])
-    end
-    return M * Q'
-end
