@@ -1,5 +1,6 @@
 
 using LinearAlgebra
+
 """
 ```normal_jacobi_zhou!(A::AbstractMatrix)```
 
@@ -15,19 +16,20 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     n = size(A, 1)
     T = typeof(A[1, 1])
     εₘ = eps(T)
+    cc = maximum(abs.(A))
     ε  = 10 * εₘ * norm(A)
     iter = 1
     itermax = 5 * n
     indices = zeros(Integer, 4)
     temp1  = zeros(T, n, 4)
     temp2 = zeros(T, 4, n)
-    oldoff = Inf
-    offschur = offSchur(A)
-    while offschur > ε && iter < itermax && offschur < oldoff
+    old_offschur = Inf
+    new_offschur = offschur(A)
+    while offschur > ε && iter < itermax && new_offschur < old_offschur
         for i ∈ 1:2:n-2
             for j ∈ i+2:2:n-1
                 indices .= i, i+1, j, j+1
-                if norm(A[[j, j + 1],[i, i + 1]]) > 4εₘ
+                if norm(A[[j, j + 1],[i, i + 1]]) > 4εₘ * cc
                     _, Q, v = schur(A[indices, indices])
                     if iszero(imag(v[1])) && !iszero(imag(v[2])) 
                         Base.permutecols!!(Q, [2, 3, 4, 1])
@@ -39,8 +41,8 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                 end
             end
         end
-        oldoff = offschur
-        offschur = offSchur(A)
+        old_offschur = new_offschur
+        new_offschur = offschur(A)
         iter += 1
     end
     

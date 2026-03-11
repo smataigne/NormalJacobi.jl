@@ -25,7 +25,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     th = zeros(T, 2, n)
     th2 = zeros(T, 2, 4)
     oldoff = Inf
-    offschur = offSchur(A)
+    offschur = offschur(A)
     while offschur > ε && iter < itermax && offschur < oldoff
         #print("Accuracy at iter", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
         for i ∈ 1:2:n-2
@@ -115,15 +115,13 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
             end
         end
         oldoff = offschur
-        offschur = offSchur(A)
-        #display(offschur)
+        offschur = offschur(A)
         iter += 1
     end
 
     if iter == itermax
         @warn "Maximum number of iterations reached in normal_jacobi_bunse!"
     end
-
     return Tridiagonal(A)
 end
 

@@ -41,7 +41,7 @@ Output: The matrix `A` diagonalized.
                     h11 = real(μ₁ * (Ac[i, i] + Ac[i, i]') / 2 + 1im * μ₂ * (Ac[i, i] - Ac[i, i]') / 2)
                     h22 = real(μ₁ * (Ac[j, j] + Ac[j, j]') / 2 + 1im * μ₂ * (Ac[j, j] - Ac[j, j]') / 2)
                     h21 = μ₁ * (Ac[j, i] + Ac[i, j]') / 2 + 1im * μ₂ * (Ac[j, i] - Ac[i, j]') / 2 
-                    c, s = jacobi_sym(h11, abs(h21), h22)
+                    c, s = jacobi_rotation(h11, abs(h21), h22)
                     sα, cα = sincos(angle(h21))
                     s = complex(cα, sα) * s
                     #Apply the Jacobi rotation to A
@@ -57,7 +57,7 @@ Output: The matrix `A` diagonalized.
         end
         iter += 1
         oldoff = off
-        off = norm(offdiag(Ac))
+        off = offdiag(Ac)
     end
 
     if iter == itermax

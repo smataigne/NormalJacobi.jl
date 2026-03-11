@@ -14,31 +14,19 @@ include("UtilsJacobi.jl")
     vmax = 1
     )
     n = size(A, 1)
-    ε  = eps(T) * norm(A) * 10        #Matrix-wise norm bound
-    n2 = opnorm(A) * 10
     εₘ = eps(T)                  #Element-wise norm bound
-    η = 10 * n / n2
-    μ  = η * ε                  #Target accuracy for clustering
-    μₘ = η * εₘ                #Element-wise target accuracy for clustering
+    ε  = εₘ * norm(A) * 10        #Matrix-wise norm bound
+    μ  = sqrt(εₘ) * norm(A)                 #Target accuracy for clustering
     ii = zeros(Int64, 2)         #Indices for rows/columns selections
     th = zeros(T, 2, n)
     tv = zeros(T, n, 2)
     iter = 1; itermax = 5 * sqrt(n)
-    sep = 0.0
     Ω = zeros(n, n)
     Ω .= (A .- A') / 2
     oldoff = Inf
     offschur = offSchur(Ω)
-    if showphase == true
-        fig, ax = subplots()
-        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_title("Initial Matrix " * L"A", fontsize =24)
-        fig.savefig("./figures/NormalJacobi_phase0.pdf")
-    end
     #Phase I  Implicit Paardekooper
-    while offschur > ε && iter < itermax && offschur < oldoff
+    while offschur > ε && iter < itermax 
         for i ∈ 1:2:n-3
             for j ∈ i+2:2:n-1
                 #First Jacobi Annihilator
@@ -106,92 +94,6 @@ include("UtilsJacobi.jl")
         offschur = offSchur(Ω)
         iter +=1
     end
-
-    if showphase == true
-        fig, ax = subplots()
-        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_title("After Phase I", fontsize =24)
-        fig.savefig("./figures/NormalJacobi_phase1.pdf")
-    end
-    #Early stopping
-    if offSchur(A) < ε
-        return Tridiagonal(A) 
-    end
-
-    Σ = zeros(T, n-1)   #Singular values on the subdiagonal of Ω 
-    for i ∈ 1:n-1
-        Σ[i] = abs(Ω[i+1, i])
-    end
-    kk, τ₀ = findzeros!(Σ, εₘ * n2)
-    solved = zeros(Bool, n)
-    tempsolved = zeros(Bool, n)
-
-    #Phase II: Implicit Symmetric Jacobi
-
-    #Case II.1: Well separated clusters
-    if length(kk) > 0
-        if εₘ < μₘ * τ₀
-            
-            solved[kk] .= true
-            sep = εₘ * n2     #Remember separation threshold
-            K = length(kk)
-            iter = 1; itermax = max(5 * sqrt(K), 15)
-            oldoff = Inf
-            M = zeros(T, K, K)
-            M .= A[kk, kk] 
-            M .+= A[kk, kk]'
-            M .*= 0.5
-            offdiagM = offdiag(M)
-            while offdiagM > ε && iter < itermax && offdiagM < oldoff
-                for i ∈ 1:K-1
-                    for j ∈ i+1:K
-                        r = (A[kk[j], kk[i]] + A[kk[j], kk[i]]) / 2
-                        if abs(r) > εₘ
-                            c, s = jacobi_sym(A[kk[i], kk[i]], r, A[kk[j], kk[j]])
-                            ii .= kk[i], kk[j]
-                            th .= A[ii, :]
-                            @. A[ii[1], :] =  c * th[1, :] + s * th[2, :] 
-                            @. A[ii[2], :] = -s * th[1, :] + c * th[2, :] 
-                            tv .= A[:, ii]
-                            @. A[:, ii[1]] =  c * tv[:, 1] + s * tv[:, 2]
-                            @. A[:, ii[2]] = -s * tv[:, 1] + c * tv[:, 2]
-                        end
-                    end
-                end
-                iter += 1
-                oldoff = offdiagM
-                M .= A[kk, kk] 
-                M .+= A[kk, kk]'
-                M .*= 0.5
-                offdiagM = offdiag(M)
-            end
-            #println("Done Phase 2 - Case II.1, nk = ", length(kk))
-        else
-            #Case II.2: Clustered singular values
-            γ = εₘ * n2
-            while εₘ > μₘ * τ₀ && length(kk) < n
-                γ += (τ₀ + εₘ)  #Increase clustering threshold
-                kk, τ₀ = findzeros!(Σ, γ)
-            end
-            solved[kk] .= true
-            sep = γ  #Remember separation threshold
-            normal_jacobi_bunse2!(A, kk)
-            #println("Done Phase 2 - Case II.2,  nk = ", length(kk))
-        end
-    end 
-    if showphase == true
-        fig, ax = subplots()
-        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_title("After Phase II", fontsize =24)
-        fig.savefig("./figures/NormalJacobi_phase2.pdf")
-    end
-
-    #Phase 3: Implicit Symmetric Skew-Hamiltonian Jacobi algorithm
-    
     #Ensures correct signs on Ω
     for i ∈ 1:n-1
         if (A[i + 1, i] - A[i, i + 1]) < 0
@@ -199,72 +101,75 @@ include("UtilsJacobi.jl")
             A[i + 1, :] .*= -1
         end
     end
-    Ω .= (A .- A') / 2
-    #display(A)
-    i = 1
-    l = zeros(Int, n)
-    while i < n
-        if !solved[i]
-            tempsolved .= solved
-            l[1] = i  
-            l[2] = i + 1
-            nk = 2     
-            solved[i:i+1] .= true
-            τ = Inf
-            for j ∈ i+2:2:n-1
-                if abs(Σ[j] - Σ[i]) < (εₘ * n2) && !solved[j]
-                    nk += 2
-                    l[nk - 1] = j  
-                    l[nk] = j + 1
-                    solved[j:j+1] .= true
-                else
-                    τ = min(τ, abs(Σ[j] - Σ[i]))
-                end
-            end
-            if nk > 2
-                if εₘ < μₘ * τ
-                    #Case III.1: Well separated clusters
-                    kk = l[1:nk]
-                    SSHjacobi2!(A, kk)
-                    tempsolved .= solved
-                    #println("Done Phase 3 - Case III.1,  nk = ", length(kk))
-                else
-                    #Case III.2: Clustered singular values
-                    γ = εₘ * n2
-                    nk = 1; nkold = 0
-                    #Recompute clusters until well separated
-                    while εₘ > μₘ * τ && nkold < nk
-                        nkold = nk
-                        solved .= tempsolved
-                        γ += (τ + εₘ)  #Increase clustering threshold
-                        l[1] = i  
-                        l[2] = i + 1
-                        nk = 2     
-                        solved[i:i+1] .= true
-                        τ = Inf
-                        for j ∈ i+1:n-1
-                            if abs(Σ[j] - Σ[i]) < γ && !solved[j]
-                                #push!(kk, j, j + 1)
-                                nk += 2
-                                l[nk - 1] = j  
-                                l[nk] = j + 1
-                                solved[j:j+1] .= true
-                            else
-                                τ = min(τ, abs(Σ[j] - Σ[i]))
-                            end
-                        end
-                    end
-                    kk = copy(l[1:nk])
-                    normal_jacobi_bunse2!(A, kk)
-                    tempsolved .= solved
-                    #println("Done Phase 3 - Case III.2, nk = ", length(kk))
-                end
-            end
-        end
-        i += 2
+    #Early stopping
+    if offSchur(A) < ε
+        return Tridiagonal(A) 
     end
     if showphase == true
         fig, ax = subplots()
+        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_title("After step I", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase1.pdf")
+    end
+    
+    adj = build_adjacency(A, μ)
+    components = find_connected_components(adj)
+    visited = zeros(Bool, length(components))
+    println("Connected components: ", components)
+    for (i, kk) ∈ enumerate(components)
+        if isSSH(A[kk, kk], ε) && !visited[i]
+            visited[i] = true
+            println("Applying SSH Jacobi on component of size ", length(kk))
+            SSHjacobi2!(A, kk)
+            #normal_jacobi_bunse2!(A, kk)
+            if showphase == true
+                fig, ax = subplots()
+                c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title("After step II.1", fontsize =24)
+                fig.savefig("./figures/NormalJacobi_phase2.pdf")
+            end
+        end
+    end
+    for (i, kk) ∈ enumerate(components)
+        if issym(A[kk, kk], μ) && !visited[i]
+            visited[i] = true
+            println("Applying symmetric Jacobi on component of size ", length(kk))
+            sym_jacobi2!(A, kk)
+            if showphase == true
+                fig, ax = subplots()
+                c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title("After step II.2", fontsize =24)
+                fig.savefig("./figures/NormalJacobi_phase3.pdf")
+            end
+        end
+    end
+    for (i, kk) ∈ enumerate(components)
+        if !visited[i]
+            println("Applying Bunse-Gerstner Jacobi on component of size ", length(kk))
+            normal_jacobi_bunse2!(A, kk)
+            if showphase == true
+                fig, ax = subplots()
+                c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
+                ax.set_xticks([])
+                ax.set_yticks([])
+                ax.set_title("After step II.3", fontsize =24)
+                fig.savefig("./figures/NormalJacobi_phase4.pdf")
+            end
+        end
+    end
+    if offSchur(A) > ε
+        println("Applying Bunse-Gerstner Jacobi ")
+        normal_jacobi_zhou!(A)
+    end
+    if showphase == true
+        fig, ax = subplots()
+        
         c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
         cb = fig.colorbar(c, ax=ax, norm=norm)
         ticks = [eps(Float64), sqrt(eps(Float64)), 1.0]
@@ -273,21 +178,8 @@ include("UtilsJacobi.jl")
         cb.set_ticklabels(ticks_labels, fontsize=20)
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.set_title("After Phase III", fontsize =24)
-        fig.savefig("./figures/NormalJacobi_phase3.pdf")
-    end
-    #Phase 4: Accuracy loss correction
-    if offSchur(A) > ε
-        normal_jacobi_bunse!(A)
-        #println("Done Phase 4 - Accuracy correction")
-    end
-    if showphase == true
-        fig, ax = subplots()
-        c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=pnorm)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_title("After Phase IV", fontsize =24)
-        fig.savefig("./figures/NormalJacobi_phase4.pdf")
+        ax.set_title("After step III", fontsize =24)
+        fig.savefig("./figures/NormalJacobi_phase5.pdf")
     end
     
     return Tridiagonal(A)

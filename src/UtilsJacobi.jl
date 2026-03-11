@@ -1,6 +1,98 @@
 using LinearAlgebra
-
 include("Utils.jl")
+
+@views function implicit_paardekooper!(A::AbstractMatrix{T}) where T
+    n  = size(A, 1)
+    εₘ = eps(T)                  #Element-wise norm bound
+    ε  = εₘ * norm(A) * 10       #Matrix-wise norm bound
+    ii = zeros(Int64, 2)         #Indices for rows/columns selections
+    th = zeros(T, 2, n)
+    tv = zeros(T, n, 2)
+    iter = 1
+    itermax = 5 * sqrt(n)
+    oldoff = Inf
+    offschur = skew_offschur(A)
+    #Phase I  Implicit Paardekooper
+    while offschur > ε && iter < itermax && offschur < oldoff
+        for i ∈ 1:2:n-3
+            for j ∈ i+2:2:n-1
+                #First Jacobi Annihilator
+                #c₁, s₁, c₂, s₂ = annihilator(Ω[i + 1, i], Ω[i + 1, j], Ω[j + 1, i], Ω[j + 1, j])
+                ω1 = (A[i + 1, i] - A[i, i + 1]) / 2
+                ω2 = (A[i + 1, j] - A[j, i + 1]) / 2
+                ω3 = (A[j + 1, i] - A[i, j + 1]) / 2
+                ω4 = (A[j + 1, j] - A[j, j + 1]) / 2
+                if abs(ω2) + abs(ω3) > 2εₘ
+                    c₁, s₁, c₂, s₂ = annihilator(ω1, ω2, ω3, ω4)
+                    #First Similarity transformation "G1' * A * G1"
+                    #G1 = [c₁ -s₁; s₁ c₁]
+                    #A[[i+1, j+1], :] = G1'A[[i+1, j+1], :]
+                    #A[:, [i+1, j+1]] = A[:, [i+1, j+1]] * G1
+                    ii .= i + 1, j + 1
+                    th .= A[ii, :]
+                    @. A[i + 1, :] =  c₁ * th[1, :] + s₁ * th[2, :] 
+                    @. A[j + 1, :] = -s₁ * th[1, :] + c₁ * th[2, :] 
+                    tv .= A[:, ii]
+                    @. A[:, i + 1] =  c₁ * tv[:, 1] + s₁ * tv[:, 2]
+                    @. A[:, j + 1] = -s₁ * tv[:, 1] + c₁ * tv[:, 2]
+
+                    #Second Similarity transformation "G2' * A * G2"
+                    #G2 = [c₂ -s₂; s₂ c₂]
+                    #A[:, [i, j]] = A[:, [i, j]] * G2
+                    #A[[i, j], :] = G2'A[[i, j], :]
+                    ii .= i, j
+                    tv .= A[:, ii]
+                    @. A[:, i] =  c₂ * tv[:, 1] + s₂ * tv[:, 2]
+                    @. A[:, j] = -s₂ * tv[:, 1] + c₂ * tv[:, 2]
+                    th .= A[ii, :]
+                    @. A[i, :] =  c₂ * th[1, :] + s₂ * th[2, :] 
+                    @. A[j, :] = -s₂ * th[1, :] + c₂ * th[2, :] 
+                end
+                #c₁, s₁, c₂, s₂ = annihilator(Ω[i + 1, i], Ω[i + 1, j + 1], Ω[j, i], Ω[j, j + 1])
+                ω1 = (A[i + 1, i] - A[i, i + 1]) / 2
+                ω2 = (A[i + 1, j + 1] - A[j + 1, i + 1]) / 2
+                ω3 = (A[j, i] - A[i, j]) / 2
+                ω4 = (A[j, j + 1] - A[j + 1, j]) / 2
+                if abs(ω2) + abs(ω3) > 2εₘ     
+                    c₁, s₁, c₂, s₂ = annihilator(ω1, ω2, ω3, ω4)
+                    #First Similarity transformation "G1' * A * G1"
+                    #G1 = [c₁ -s₁; s₁ c₁]
+                    ii .= i + 1, j
+                    th .= A[ii, :]
+                    @. A[i + 1, :] =  c₁ * th[1, :] + s₁ * th[2, :] 
+                    @. A[j, :] = -s₁ * th[1, :] + c₁ * th[2, :] 
+                    tv .= A[:, ii]
+                    @. A[:, i + 1] =  c₁ * tv[:, 1] + s₁ * tv[:, 2]
+                    @. A[:, j] = -s₁ * tv[:, 1] + c₁ * tv[:, 2]
+                    #Second Similarity transformation "G2' * A * G2"
+                    #G2 = [c₂ -s₂; s₂ c₂]
+                    ii .= i, j + 1
+                    tv .= A[:, ii]
+                    @. A[:, i] =  c₂ * tv[:, 1] + s₂ * tv[:, 2]
+                    @. A[:, j + 1] = -s₂ * tv[:, 1] + c₂ * tv[:, 2]
+                    th .= A[ii, :]
+                    @. A[i, :] =  c₂ * th[1, :] + s₂ * th[2, :] 
+                    @. A[j + 1, :] = -s₂ * th[1, :] + c₂ * th[2, :]
+                end
+            end
+        end
+        oldoff = offschur
+        offschur = skew_offschur(A)
+        iter += 1
+    end
+    if offschur > 10ε
+        @warn "Phase I did not converge to the desired accuracy!"
+    end
+    #Ensures correct signs on Ω
+    for i ∈ 1:n-1
+        if (A[i + 1, i] - A[i, i + 1]) < 0
+            A[:, i + 1] .*= -1
+            A[i + 1, :] .*= -1
+        end
+    end
+    return A
+end
+
 """
 ```normal_jacobi_bunse2!(A::AbstractMatrix)```
 
@@ -26,7 +118,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     th = zeros(T, 2, n)
     th2 = zeros(T, 2, 4)
     oldoff = Inf
-    offschur = offSchur(A[kk, kk])
+    offschur = offschur(A[kk, kk])
     while offschur > ε && iter < itermax && offschur < oldoff
         #print("Accuracy at iter", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
         for i ∈ 1:2:nk-2
@@ -116,7 +208,7 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
             end
         end
         oldoff = offschur
-        offschur = offSchur(A[kk, kk])
+        offschur = offschur(A[kk, kk])
         #display(offschur)
         iter += 1
     end
@@ -129,11 +221,11 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
 end
 
 """
-    SSHjacobi2!(A::AbstractMatrix{T}) where T
+    ssh_jacobi2!(A::AbstractMatrix{T}) where T
 
 In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of even size.
 """
-@views function SSHjacobi2!(A::AbstractMatrix{T}, kk::AbstractVector{Int} ) where T
+@views function ssh_jacobi2!(A::AbstractMatrix{T}, kk::AbstractVector{Int} ) where T
     n = size(A, 1)
     itermax = 10; iter = 1
     nk = length(kk)
@@ -144,7 +236,7 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
     temp2 = zeros(T, n, 4)
     ε = eps(T) * 100 * norm(A)
     oldoff = Inf
-    offdiagA = offSchur(A[kk, kk])
+    offdiagA = ssh_offdiag(A[kk, kk])
     while offdiagA > ε && iter < itermax && offdiagA < oldoff
         for i ∈ 1:2:nk-3
             for j ∈ i+2:2:nk-1
@@ -154,13 +246,10 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
                 w₁ = 0.5 * (A[ii[1], ii[1]] + A[ii[2], ii[2]])
                 w₂ = 0.25 * (A[ii[1], ii[3]] + A[ii[3], ii[1]] + A[ii[2], ii[4]] + A[ii[4], ii[2]])
                 w₃ = 0.5 * (A[ii[3], ii[3]] + A[ii[4], ii[4]])
-                x = 0.25 * (A[ii[1], ii[4]] - A[ii[2], ii[3]] - A[ii[3], ii[2]] + A[ii[1], ii[4]])
+                x = 0.25 * (A[ii[1], ii[4]] - A[ii[2], ii[3]] - A[ii[3], ii[2]] + A[ii[4], ii[1]])
                 p[1] = -x
                 p[2] = 0.5 * (w₁ - w₃)
                 p[3] = w₂
-                #p[1] = -A[ii[1], ii[4]]
-                #p[2] = 0.5 * (A[ii[1], ii[1]] - A[ii[3], ii[3]])
-                #p[3] = A[ii[1], ii[3]]
                 α = norm(p)
                 β = α + p[2]
                 R[:, 1] .= β, 0.0, -p[3], p[1]
@@ -176,7 +265,71 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
         end
         iter +=1
         oldoff = offdiagA
-        offdiagA = offSchur(A[kk, kk])
+        offdiagA = ssh_offdiag(A[kk, kk])
     end
     return A
 end
+
+@views function symmetric_jacobi2!(A::AbstractMatrix{T}, kk::AbstractVector{Int} ) where T
+    K = length(kk)
+    n = size(A, 1)
+    iter = 1; itermax = max(5 * sqrt(K), 15)
+    ii = zeros(Int, 2)
+    th = zeros(T, 2, n)
+    tv = zeros(T, n, 2)
+    old_offdiag = Inf
+    new_offdiag = sym_offdiag(A[kk, kk])
+    ε = eps(T) * 10 * norm(A)
+    εₘ = eps(T) * 10
+    while new_offdiag > ε && iter < itermax && new_offdiag < old_offdiag
+        for i ∈ 1:K-1
+            for j ∈ i+1:K
+                r = (A[kk[j], kk[i]] + A[kk[j], kk[i]]) / 2
+                if abs(r) > εₘ
+                    c, s = jacobi_rotation(A[kk[i], kk[i]], r, A[kk[j], kk[j]])
+                    ii .= kk[i], kk[j]
+                    th .= A[ii, :]
+                    @. A[ii[1], :] =  c * th[1, :] + s * th[2, :] 
+                    @. A[ii[2], :] = -s * th[1, :] + c * th[2, :] 
+                    tv .= A[:, ii]
+                    @. A[:, ii[1]] =  c * tv[:, 1] + s * tv[:, 2]
+                    @. A[:, ii[2]] = -s * tv[:, 1] + c * tv[:, 2]
+                end
+            end
+        end
+        iter += 1
+        old_offdiag = new_offdiag
+        new_offdiag = sym_offdiag(A[kk, kk])
+    end
+    return A
+end
+#=
+m = 6
+H = randn(m ,m)
+H[1,2] *= 1e-6
+H[2,1] *= 1e-6
+H .+= H'
+Ω = 1e-6 * randn(m, m)
+Ω .-= Ω'
+A = [H -Ω; Ω H]
+H1 = randn(m ,m)
+H1 .+= H1'
+Ω1 = randn(m, m)
+Ω1 .-= Ω1'
+P = randn(2m, 2m)#[Ω1 H1; -H1 Ω1]
+display(tr(P'A))
+display(offdiagssh(P))
+A .+= 1e-12 * P
+kk = invpermute!(Array(1:2m), [1:2:2m;2:2:2m])
+display(isSSH(A[kk, kk], 1e-4))
+display(isSSH(A[kk, kk], 1e-12))
+M = A[kk, kk]
+SSHjacobi2!(M, Array(1:2m))
+display(sshpart(M))
+#=
+A = [Ω H; -H Ω]
+offdiagssh(A[kk, kk])
+=#
+#display(normofssh(A[kk, kk]))
+=#
+

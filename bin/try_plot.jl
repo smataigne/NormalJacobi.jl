@@ -12,13 +12,12 @@ norm = PyCall.pyimport("matplotlib.colors").LogNorm(
 )
 fig, ax = subplots()
 c = ax.imshow(max.(abs.(A), eps(Float64)), cmap="viridis", aspect="equal", norm=norm)
-cb = fig.colorbar(c, ax=ax, norm=norm)
+
 ticks = [eps(Float64), sqrt(eps(Float64)), 1.0]
 ticks_labels = [L"\varepsilon_\mathrm{m}", L"\sqrt{\varepsilon}_\mathrm{m}", L"1"]
-cb.set_ticks(ticks)
-cb.set_ticklabels(ticks_labels, fontsize=16)
+
 ax.set_xticks([])
 ax.set_yticks([])
 ax.set_title("After Phase III", fontsize=20)
-tight_layout()
+display(fig)
 fig.savefig("matrix_plot.pdf")
