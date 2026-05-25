@@ -17,7 +17,6 @@ T = 5 # Number of trials per case
     B = copy(A)
     normal_jacobi_skew!(B)
     errors[1] = offschur(B) / norm(A)
-    #=
     B = copy(A)
     normal_jacobi_bunse!(B)
     errors[2] = offschur(B) / norm(A)
@@ -30,14 +29,12 @@ T = 5 # Number of trials per case
     B = complex.(copy(A), 0)
     normal_jacobi_he!(B)
     errors[5] =  offdiag(B) /  norm(A)
-    =#
     return log.(errors)
 end
 
 for (i, n) ∈ enumerate(ns)
     println("Entering n = ", n)
     for t ∈ 1:T
-        #=
         #Case E1 Haar-distributed random orthogonal matrix
         A = Matrix(qr(randn(n, n)).Q)
         @time errors[1, i, :] .+= testmatrix!(A, temp)
@@ -46,12 +43,10 @@ for (i, n) ∈ enumerate(ns)
         A = create_matrix_rand(n, 0.0 , 0.0)
         @time errors[2, i, :] .+= testmatrix!(A, temp)
         print("Case 2: done \n")
-        =#
         #Case E3 Haar-distributed Schur vectors, random eigenvalues with 30% real eigenvalues
         A = create_matrix(n, 0.34, 0.0)
         @time errors[3, i, :] .+= testmatrix!(A, temp)
         print("Case 3: done \n")
-        #=
         #Case E4 Haar-distributed Schur vectors, random eigenvalues with 30% repeated complex eigenvalues
         A = create_matrix(n, 0.0, 0.34)
         @time errors[4, i, :] .+= testmatrix!(A, temp)
@@ -60,7 +55,6 @@ for (i, n) ∈ enumerate(ns)
         A = create_matrix_worst(n, 0.0, 0.0)
         @time errors[5, i, :] .+= testmatrix!(A, temp)
         print("Case 5: done \n")  
-        =#   
     end
 end
 
