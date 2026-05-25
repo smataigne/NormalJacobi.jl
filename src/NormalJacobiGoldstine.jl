@@ -92,3 +92,59 @@ Output: The diagonal form of A in a `Diagonal` matrix.
 end
 
 normal_jacobi_goldstine(A::AbstractMatrix{<:Complex}) = normal_jacobi_goldstine!(copy(A))
+
+@views function parallel_normal_jacobi_goldstine!(A::AbstractMatrix{<:Complex})
+    n = size(A, 1)
+    T = eltype(A)
+    εₘ = eps(real(T))
+    ε = 10 * εₘ * norm(A)
+    iter = 1
+    itermax = 5 * n
+    ii = zeros(Integer, 2)
+    tv = zeros(T, n, 2)
+    th = zeros(T, 2, n)
+    oldoff = Inf
+    offd = offdiag(A)
+    steps = parallel_cyclic_order(n)
+    while offd> ε && iter < itermax && offd < oldoff
+        for pairs ∈ steps
+            Threads.@threads for pair in pairs
+                i = minimum(pair)
+                j = maximum(pair) 
+                if abs(A[i, j]) > εₘ || abs(A[j, i]) > εₘ
+                    ii .= i, j
+                    if abs(A[i, j] + A[j, i]')^2 + real(A[i, i] - A[j, j])^2 ≥ abs(A[i, j] - A[j, i]')^2 + imag(A[i, i] - A[j, j])^2
+                        d  = real(A[i, j] + A[j, i])
+                        α  = atan(imag(A[i, j] - A[j, i]),  d)
+                        d₂ = real(A[i, i] - A[j, j])
+                        x = 0.5 * atan(abs(A[i ,j] + A[j, i]') / d₂)
+                    else
+                        d  = imag(A[i, j]+ A[j, i])
+                        α  = atan(- real(A[i, j] - A[j, i]),  d)
+                        d₂ = imag(A[i, i] - A[j, j])
+                        x = 0.5 * atan(abs(A[i ,j] - A[j, i]') / d₂)
+                    end
+                    s, c = sincos(x)
+                    s *= exp(complex(0, -α))
+                    tv .= A[:, ii]
+                    @. A[:, i] =  c * tv[:, 1] + s * tv[:, 2]
+                    @. A[:, j] = -s' * tv[:, 1] + c * tv[:, 2]
+                    th .= A[ii, :]
+                    @. A[i, :] =  c * th[1, :] + s' * th[2, :] 
+                    @. A[j, :] = -s * th[1, :] + c * th[2, :] 
+                end
+            end
+        end
+        oldoff = offd
+        offd = offdiag(A)
+        iter += 1
+    end
+
+    if iter == itermax
+        @warn "Maximum number of iterations reached in normal_jacobi_goldstine!"
+    end
+
+    return Diagonal(A)
+end
+
+parallel_normal_jacobi_goldstine(A::AbstractMatrix{<:Complex}) = parallel_normal_jacobi_goldstine!(copy(A))

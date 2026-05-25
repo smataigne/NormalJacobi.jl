@@ -70,7 +70,6 @@ function sym_offdiag(A::AbstractMatrix{T}) where T
     Σ = zero(T)
     n = size(A, 1)
     for i ∈ 1:n
-        Σ = hypot(Σ, A[i, i])
         for j ∈ i+1:n
             Σ = hypot(Σ, ((A[j, i] + A[i, j]') / sqrt(2)))
         end
@@ -169,8 +168,8 @@ Paardekooper's method to compute the cosines and sines of the two Givens rotatio
 is diagonal.
 """
 function annihilator(a::Number, b::Number, e::Number, d::Number)
-    #More stable implementation 
     #=
+    #More stable implementation 
     ε = eps(typeof(a))
     ν₁ = a^2 + b^2 - d^2 - e^2
     if abs(ν₁) > ε
@@ -192,12 +191,13 @@ function annihilator(a::Number, b::Number, e::Number, d::Number)
     else
         return c₁, s₁, 0, 1
     end
+    
     =#
-    #Simple implementation
-    α₁ = 0.5 * atan(2 * (a * e + b * d) / ( a^2 + b^2 - d^2 - e^2))
-    c₁ = cos(α₁); s₁ = sin(α₁);
-    α₂ = atan((s₁ * a - c₁ * e) / (c₁ * d - s₁ * b))
-    c₂ = cos(α₂); s₂ = sin(α₂);
+    #More stable implementation
+    α₁ = 0.5 * atan(2 * (a * e + b * d), ( a^2 + b^2 - d^2 - e^2))
+    s₁, c₁ = sincos(α₁);
+    α₂ = atan((s₁ * a - c₁ * e), (c₁ * d - s₁ * b))
+    s₂, c₂ = sincos(α₂);
     return c₁, s₁, c₂, s₂
 end
 
@@ -314,5 +314,23 @@ function find_connected_components(adj::AbstractMatrix{Bool})
         end
     end
     return components
+end
+
+@views function parallel_cyclic_order(n)
+
+    idx = collect(1:n)
+    steps = zeros(Int, n - 1, n ÷ 2, 2)
+    for j in 1:n-1
+        for i in 1:(n ÷ 2)
+            steps[j, i, :] .= idx[i], idx[n-i+1]
+        end
+        last = idx[end]
+        for i in n:-1:3
+            idx[i] = idx[i-1]
+        end
+        idx[2] = last
+    end
+
+    return steps
 end
 

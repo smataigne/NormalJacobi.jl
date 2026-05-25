@@ -38,9 +38,6 @@ include("UtilsJacobi.jl")
                 if abs(ω2) + abs(ω3) > εₘ
                     c₁, s₁, c₂, s₂ = paardekooper(ω1, ω2, ω3, ω4)
                     #First Similarity transformation "G1' * A * G1"
-                    #G1 = [c₁ -s₁; s₁ c₁]
-                    #A[[i+1, j+1], :] = G1'A[[i+1, j+1], :]
-                    #A[:, [i+1, j+1]] = A[:, [i+1, j+1]] * G1
                     ii .= i + 1, j + 1
                     th .= A[ii, :]
                     @. A[i + 1, :] =  c₁ * th[1, :] + s₁ * th[2, :] 
@@ -50,9 +47,6 @@ include("UtilsJacobi.jl")
                     @. A[:, j + 1] = -s₁ * tv[:, 1] + c₁ * tv[:, 2]
 
                     #Second Similarity transformation "G2' * A * G2"
-                    #G2 = [c₂ -s₂; s₂ c₂]
-                    #A[:, [i, j]] = A[:, [i, j]] * G2
-                    #A[[i, j], :] = G2'A[[i, j], :]
                     ii .= i, j
                     tv .= A[:, ii]
                     @. A[:, i] =  c₂ * tv[:, 1] + s₂ * tv[:, 2]
@@ -69,7 +63,6 @@ include("UtilsJacobi.jl")
                 if abs(ω2) + abs(ω3) > εₘ     
                     c₁, s₁, c₂, s₂ = paardekooper(ω1, ω2, ω3, ω4)
                     #First Similarity transformation "G1' * A * G1"
-                    #G1 = [c₁ -s₁; s₁ c₁]
                     ii .= i + 1, j
                     th .= A[ii, :]
                     @. A[i + 1, :] =  c₁ * th[1, :] + s₁ * th[2, :] 
@@ -78,7 +71,6 @@ include("UtilsJacobi.jl")
                     @. A[:, i + 1] =  c₁ * tv[:, 1] + s₁ * tv[:, 2]
                     @. A[:, j] = -s₁ * tv[:, 1] + c₁ * tv[:, 2]
                     #Second Similarity transformation "G2' * A * G2"
-                    #G2 = [c₂ -s₂; s₂ c₂]
                     ii .= i, j + 1
                     tv .= A[:, ii]
                     @. A[:, i] =  c₂ * tv[:, 1] + s₂ * tv[:, 2]

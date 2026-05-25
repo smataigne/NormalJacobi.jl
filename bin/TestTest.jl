@@ -20,8 +20,9 @@ A = M + S
 display(norm(A'A - A*A'))
 =#
 BLAS.set_num_threads(1)
-n = 50
-A = Matrix(qr(randn(n, n)).Q)
-@btime normal_jacobi_bunse2!(copy(A), Array(1:n))
-@btime normal_jacobi_bunse!(copy(A))
-println("Done")
+for  _ in 1:10
+    n = 128
+    A = create_matrix(n, 0.0, 0.34)
+    @time normal_jacobi_skew!(A)
+    display(offschur(A))
+end

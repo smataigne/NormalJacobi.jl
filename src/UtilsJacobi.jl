@@ -11,9 +11,13 @@ include("Utils.jl")
     iter = 1
     itermax = 5 * sqrt(n)
     oldoff = Inf
-    offschur = skew_offschur(A)
+    new_offschur = skew_offschur(A)
     #Phase I  Implicit Paardekooper
-    while offschur > ε && iter < itermax && offschur < oldoff
+    while new_offschur > ε && iter < itermax
+        if oldoff < new_offschur && new_offschur < 10ε
+            @warn "Paardekooper's threshold was too low"
+            break
+        end 
         for i ∈ 1:2:n-3
             for j ∈ i+2:2:n-1
                 #First Jacobi Annihilator
@@ -76,12 +80,9 @@ include("Utils.jl")
                 end
             end
         end
-        oldoff = offschur
-        offschur = skew_offschur(A)
+        oldoff = new_offschur
+        new_offschur = skew_offschur(A)
         iter += 1
-    end
-    if offschur > 10ε
-        @warn "Phase I did not converge to the desired accuracy!"
     end
     #Ensures correct signs on Ω
     for i ∈ 1:n-1
@@ -117,9 +118,9 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
     tv = zeros(T, n, 2)
     th = zeros(T, 2, n)
     th2 = zeros(T, 2, 4)
-    oldoff = Inf
-    offschur = offschur(A[kk, kk])
-    while offschur > ε && iter < itermax && offschur < oldoff
+    old_offschur = Inf
+    new_offschur = offschur(A[kk, kk])
+    while new_offschur > ε && iter < itermax && new_offschur < old_offschur
         #print("Accuracy at iter", iter, " : ", norm(A-Matrix(Tridiagonal(A))), "\n")
         for i ∈ 1:2:nk-2
             for j ∈ i+2:2:nk-1
@@ -207,9 +208,8 @@ Output: The real Schur form of a in a `Tridiagonal` matrix.
                 end
             end
         end
-        oldoff = offschur
-        offschur = offschur(A[kk, kk])
-        #display(offschur)
+        old_offschur = new_offschur
+        new_offschur = offschur(A[kk, kk])
         iter += 1
     end
 
@@ -266,6 +266,7 @@ In-place Symmetric Skew-Hamiltonian Jacobi method for a symmetric matrix A of ev
         iter +=1
         oldoff = offdiagA
         offdiagA = ssh_offdiag(A[kk, kk])
+        #display(offdiagA)
     end
     return A
 end
@@ -304,12 +305,10 @@ end
     return A
 end
 #=
-m = 6
-H = randn(m ,m)
-H[1,2] *= 1e-6
-H[2,1] *= 1e-6
+m = 100
+H = 1e-16 * randn(m ,m)
 H .+= H'
-Ω = 1e-6 * randn(m, m)
+Ω =  randn(m, m)
 Ω .-= Ω'
 A = [H -Ω; Ω H]
 H1 = randn(m ,m)
@@ -317,19 +316,20 @@ H1 .+= H1'
 Ω1 = randn(m, m)
 Ω1 .-= Ω1'
 P = randn(2m, 2m)#[Ω1 H1; -H1 Ω1]
-display(tr(P'A))
-display(offdiagssh(P))
-A .+= 1e-12 * P
+#display(tr(P'A))
+#display(ssh_offdiag(P))
+A .+= 1e-7 * P
 kk = invpermute!(Array(1:2m), [1:2:2m;2:2:2m])
-display(isSSH(A[kk, kk], 1e-4))
-display(isSSH(A[kk, kk], 1e-12))
+display(is_ssh(A[kk, kk], 1e-4))
+display(is_ssh(A[kk, kk], 1e-12))
 M = A[kk, kk]
-SSHjacobi2!(M, Array(1:2m))
-display(sshpart(M))
+display(norm(M))
+ssh_jacobi2!(M, Array(1:2m))
+display(norm(M))
 #=
 A = [Ω H; -H Ω]
 offdiagssh(A[kk, kk])
 =#
 #display(normofssh(A[kk, kk]))
-=#
 
+=#
